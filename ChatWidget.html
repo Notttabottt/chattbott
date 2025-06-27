@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Widget Integration</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+
+    <style>
+        /*
+         * GLOBAL CSS OVERRIDES & FIXES
+         * Apply box-sizing globally for consistent layout calculations.
+         * Prevent horizontal scrollbars on the entire page.
+         */
+        *, ::before, ::after {
+            box-sizing: border-box !important;
+        }
+
+        html, body {
+            overflow-x: hidden !important;
+            /* Added for consistent base, can be adjusted if your site needs default margins/padding */
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Fallback font */
+        }
+
+        /*
+         * N8N CHAT WIDGET CUSTOMIZATION
+         * These variables control the overall look and feel of the widget.
+         * Using !important to ensure they override N8N's defaults.
+         */
+        :root {
+            --chat--color-primary: #4285f4 !important; /* From your header gradient start */
+            --chat--color-primary-shade-50: #3367d6 !important;
+            --chat--color-primary-shade-100: #2a57ae !important;
+
+            --chat--color-secondary: #4285f4 !important; /* User message background */
+            --chat--color-secondary-shade-50: #3367d6 !important;
+
+            --chat--color-light: #f0f2f5 !important; /* Body background */
+            --chat--color-light-shade-50: #e8eaed !important;
+            --chat--color-light-shade-100: #e8eaed !important;
+            --chat--color-dark: #333 !important;
+
+            --chat--color-white: white !important;
+            --chat--color-typing: #666 !important;
+
+            --chat--spacing: 20px !important;
+            --chat--border-radius: 20px !important;
+            --chat--transition-duration: 0.2s !important;
+            --chat--font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+
+            --chat--window--width: 400px !important;
+            --chat--window--height: 600px !important;
+            --chat--window--bottom: 20px !important;
+            --chat--window--right: 20px !important;
+            --chat--window--z-index: 9999 !important; /* Keep !important as N8N defines it via variable */
+            --chat--window--border: none !important;
+            --chat--window--border-radius: 20px !important;
+
+            --chat--header-height: auto !important;
+            --chat--header--padding: 20px !important;
+            --chat--header--background: linear-gradient(135deg, #4285f4 0%, #34a853 100%) !important;
+            --chat--header--color: white !important;
+            --chat--heading--font-size: 16px !important;
+            --chat--subtitle--font-size: 12px !important;
+            --chat--subtitle--line-height: 1 !important;
+
+            --chat--message--font-size: 14px !important;
+            --chat--message--padding: 14px 18px !important;
+            --chat--message--border-radius: 18px !important;
+            --chat--message-line-height: 1.4 !important;
+            --chat--message--margin-bottom: 16px !important;
+
+            --chat--message--bot--background: #f1f3f4 !important;
+            --chat--message--bot--color: #333 !important;
+            --chat--message--bot--border: none !important;
+
+            --chat--message--user--background: #4285f4 !important;
+            --chat--message--user--color: white !important;
+            --chat--message--user--border: none !important;
+
+            --chat--textarea--height: 44px !important;
+            --chat--input--font-size: 14px !important;
+            --chat--input--border: 2px solid #e8eaed !important;
+            --chat--input--border-radius: 24px !important;
+            --chat--input--padding: 12px 16px !important;
+            --chat--input--background: white !important;
+            --chat--input--text-color: initial !important;
+            --chat--input--line-height: 1.5 !important;
+            --chat--input--placeholder--font-size: var(--chat--input--font-size) !important;
+            --chat--input--border-active: 2px solid #4285f4 !important;
+
+            --chat--input--send--button--background: #4285f4 !important;
+            --chat--input--send--button--color: white !important;
+            --chat--input--send--button--background-hover: #3367d6 !important;
+            --chat--input--send--button--color-hover: white !important;
+
+            --chat--input--file--button--background: white !important;
+            --chat--input--file--button--color: #4285f4 !important;
+            --chat--input--file--button--background-hover: white !important;
+            --chat--input--file--button--color-hover: #3367d6 !important;
+
+            --chat--footer--background: #fafafa !important;
+            --chat--footer--color: #999 !important;
+
+            --chat--toggle--size: 64px !important;
+            --chat--toggle--width: var(--chat--toggle--size) !important;
+            --chat--toggle--height: var(--chat--toggle--size) !important;
+            --chat--toggle--background: #4285f4 !important;
+            --chat--toggle--hover--background: #3367d6 !important;
+            --chat--toggle--color: white !important;
+            --chat--toggle--border-radius: 50% !important;
+        }
+
+        /*
+         * SPECIFIC COMPONENT OVERRIDES (with increased specificity and !important)
+         * Ensure these target N8N's elements correctly (e.g., using .n8n-chat prefix).
+         * Crucially, avoid !important on position/z-index for the main wrapper.
+         */
+        .n8n-chat .chat-window-wrapper {
+            max-width: var(--chat--window--width) !important;
+            width: 100% !important;
+            right: var(--chat--window--right, 20px) !important;
+            bottom: var(--chat--window--bottom, 20px) !important;
+            /* IMPORTANT: Removed !important from position and z-index.
+               Let N8N's JavaScript manage these core properties to prevent conflicts. */
+            /* position: fixed; */
+            /* z-index: 9999; */
+        }
+
+        .n8n-chat .chat-window-wrapper .chat-window {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: var(--chat--window--height) !important;
+            border-radius: var(--chat--window--border-radius) !important;
+        }
+
+        .n8n-chat .chat-layout .chat-header {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 12px !important;
+        }
+
+        .n8n-chat .chat-layout .chat-header h1 {
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            margin-bottom: 4px !important;
+            color: white !important;
+        }
+
+        .n8n-chat .chat-layout .chat-header p {
+            font-size: 12px !important;
+            opacity: 0.9 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            margin-top: 0 !important;
+            line-height: 1 !important;
+            color: white !important;
+        }
+
+        .n8n-chat .chat-layout .chat-header .avatar {
+            width: 40px !important;
+            height: 40px !important;
+            background: rgba(255, 255, 255, 0.2) !important;
+            border-radius: 50% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 20px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .n8n-chat .chat-layout .chat-header p .status-dot {
+            width: 8px !important;
+            height: 8px !important;
+            background: #4ade80 !important;
+            border-radius: 50% !important;
+            display: inline-block !important;
+        }
+
+        .n8n-chat .chat-heading .chat-close-button {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 24px !important;
+            cursor: pointer !important;
+            padding: 8px !important;
+            border-radius: 8px !important;
+            transition: background 0.2s !important;
+            position: absolute !important;
+            right: 20px !important;
+            top: 50% !important;
+            transform: translateY(-50%) !important;
+            z-index: 10 !important;
+        }
+
+        .n8n-chat .chat-heading .chat-close-button:hover {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+        }
+
+        .n8n-chat .chat-messages-list {
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 16px !important;
+        }
+
+        .n8n-chat .chat-message.chat-message-from-bot {
+            border-bottom-left-radius: 6px !important;
+        }
+
+        .n8n-chat .chat-message.chat-message-from-user {
+            border-bottom-right-radius: 6px !important;
+        }
+
+        .n8n-chat .chat-button {
+            background: white !important;
+            border: 2px solid #4285f4 !important;
+            color: #4285f4 !important;
+            padding: 8px 16px !important;
+            border-radius: 20px !important;
+            font-size: 13px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            font-weight: 500 !important;
+        }
+
+        .n8n-chat .chat-button:hover {
+            background: #4285f4 !important;
+            color: white !important;
+        }
+
+        .n8n-chat .chat-input {
+            padding: 20px !important;
+            border-top: 1px solid #e8eaed !important;
+            display: flex !important;
+            gap: 12px !important;
+            align-items: center !important;
+        }
+
+        .n8n-chat .chat-inputs textarea {
+            border: 2px solid #e8eaed !important;
+            border-radius: 24px !important;
+            padding: 12px 16px !important;
+            outline: none !important;
+            transition: border-color 0.2s !important;
+            min-height: auto !important;
+            height: auto !important;
+            flex: 1 !important;
+        }
+
+        .n8n-chat .chat-inputs textarea:focus {
+            border-color: #4285f4 !important;
+        }
+
+        .n8n-chat .chat-input-send-button {
+            width: 44px !important;
+            height: 44px !important;
+            border-radius: 50% !important;
+            font-size: 18px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+
+        .n8n-chat .chat-input-file-button {
+            display: none !important;
+        }
+
+        .n8n-chat .chat-message-typing {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            padding: 14px 18px !important;
+            background: #f1f3f4 !important;
+            border-radius: 18px !important;
+            border-bottom-left-radius: 6px !important;
+            max-width: 85% !important;
+            margin-left: 0 !important;
+        }
+
+        .n8n-chat .chat-message-typing .chat-message-typing-body {
+            display: flex !important;
+            gap: 4px !important;
+        }
+
+        .n8n-chat .chat-message-typing .chat-message-typing-circle {
+            width: 6px !important;
+            height: 6px !important;
+            background: #666 !important;
+        }
+
+        .n8n-chat .chat-message-typing::after {
+            content: "AI is typing..." !important;
+            font-size: 12px !important;
+            color: #666 !important;
+            margin-left: 0 !important;
+        }
+
+        .n8n-chat .chat-powered-by {
+            text-align: center !important;
+            padding: 12px !important;
+            font-size: 11px !important;
+            color: #999 !important;
+            background: #fafafa !important;
+        }
+
+        .n8n-chat .chat-powered-by a {
+            color: #999 !important;
+            text-decoration: none !important;
+            font-weight: bold !important;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .n8n-chat .chat-window-wrapper {
+                bottom: 0 !important;
+                right: 0 !important;
+                width: 100% !important; /* Changed from 100vw to 100% for better mobile layout */
+                max-width: 100% !important;
+                height: 100vh !important;
+                max-width: none !important;
+                max-height: none !important;
+                border-radius: 0 !important;
+            }
+
+            .n8n-chat .chat-window-wrapper .chat-window {
+                height: 100vh !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 0 !important;
+                margin-bottom: 0 !important;
+            }
+
+            .n8n-chat .chat-layout .chat-header {
+                padding: 16px 20px !important;
+            }
+
+            .n8n-chat .chat-messages-list {
+                padding: 16px !important;
+            }
+
+            .n8n-chat .chat-input {
+                padding: 16px 20px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <script type="module">
+        import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+
+        createChat({
+            webhookUrl: "http://localhost:5678/webhook/8c40fe4c-2994-4aee-9295-a47894bb9c1f/chat"
+        });
+
+        // Optional: JavaScript to add avatar and status dot to the header
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatHeader = document.querySelector('.n8n-chat .chat-layout .chat-header');
+            if (chatHeader && !chatHeader.querySelector('.avatar')) {
+                const avatarDiv = document.createElement('div');
+                avatarDiv.className = 'avatar';
+                avatarDiv.textContent = '🤖';
+                chatHeader.prepend(avatarDiv);
+
+                const statusParagraph = chatHeader.querySelector('p');
+                if (statusParagraph && statusParagraph.textContent.includes('online') && !statusParagraph.querySelector('.status-dot')) {
+                    const statusDotDiv = document.createElement('div');
+                    statusDotDiv.className = 'status-dot';
+                    statusParagraph.prepend(statusDotDiv);
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
